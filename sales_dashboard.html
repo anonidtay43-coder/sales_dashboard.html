@@ -27,6 +27,7 @@
     background: #EEF2F8;
     color: var(--navy);
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   /* ── Header ── */
@@ -47,7 +48,12 @@
   }
 
   /* ── Layout ── */
-  .main { padding: 1.5rem 2rem 2.5rem; max-width: 1400px; margin: 0 auto; }
+  .main {
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 
   /* ── Filter bar ── */
   .filter-bar {
@@ -65,24 +71,21 @@
 
   /* ── KPI Cards ── */
   .kpi-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  overflow-x: auto;
-}
-
-.kpi-card {
-  min-width: 220px;
-  flex-shrink: 0;
-}
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .8rem;
+    margin-bottom: 1rem;
+  }
   .kpi-card {
+    width: 100%;
+    min-width: 0;
     background: var(--white); border-radius: 12px;
     padding: 1rem 1.1rem .9rem;
     box-shadow: var(--card-shadow);
     border-top: 4px solid transparent;
     transition: transform .15s;
   }
+  .kpi-card:first-child { grid-column: 1 / -1; }
   .kpi-card:hover { transform: translateY(-2px); }
   .kpi-card.navy   { border-color: var(--navy); }
   .kpi-card.blue   { border-color: var(--blue); }
@@ -103,19 +106,23 @@
 
   /* ── Chart grid ── */
   .chart-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr 1fr;
-    gap: 1rem; margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
   .chart-grid-2 {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 1rem; margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
   .card {
     background: var(--white); border-radius: 12px;
     padding: 1.1rem 1.25rem;
     box-shadow: var(--card-shadow);
+    width: 100%;
+    max-width: 100%;
   }
   .card-title {
     font-size: .82rem; font-weight: 700; color: var(--navy);
@@ -176,10 +183,31 @@
     letter-spacing: .08em; color: #94A3B8; margin: 1.2rem 0 .6rem;
   }
 
-  @media (max-width: 1100px) {
-    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-    .chart-grid { grid-template-columns: 1fr; }
-    .chart-grid-2 { grid-template-columns: 1fr; }
+  canvas { max-width: 100% !important; }
+
+  @media (max-width: 768px) {
+    .header {
+      padding: 10px 1rem;
+      height: auto;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .header-title { font-size: .9rem; }
+    .header-sub { font-size: .7rem; line-height: 1.4; }
+    .filter-bar {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 6px;
+    }
+    .filter-btn { flex-shrink: 0; }
+    .kpi-card:nth-child(1) { grid-column: 1 / -1; }
+    .chart-wrap { height: 260px; }
+    .chart-wrap.tall { height: 320px; }
+    .card { padding: 1rem; }
+    table { min-width: 700px; }
+    .seller-name { width: 55px; font-size: .72rem; }
+    .seller-val { width: 48px; font-size: .65rem; }
   }
 </style>
 </head>
@@ -191,6 +219,21 @@
     <div class="header-sub">เป้ายอดขายเดือน พ.ค.–มิ.ย. 2569 (2 เดือน) &nbsp;|&nbsp; เป้าขายและค่าคอมรายเซล</div>
   </div>
   <div class="header-badge">34 เซล · 7 สาขา</div>
+  <a id="raw-data-btn" href="#" target="_blank" rel="noopener"
+    style="background:#10B981;color:#fff;padding:5px 16px;border-radius:20px;
+           font-size:.78rem;font-weight:600;letter-spacing:.06em;text-decoration:none;
+           display:flex;align-items:center;gap:6px;transition:background .15s;"
+    onmouseover="this.style.background='#059669'"
+    onmouseout="this.style.background='#10B981'"
+    title="เปิด Google Sheets">
+    📊 ดู Raw Data
+  </a>
+</div>
+
+<!-- Setup Notice -->
+<div id="sheet-notice" style="display:none;background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:8px 1.5rem;font-size:.8rem;color:#92400E;align-items:center;gap:8px;">
+  <span>⚙️</span>
+  <span>ยังไม่ได้ตั้งค่า Google Sheets URL — แก้ <code style="background:#FDE68A;padding:1px 6px;border-radius:4px;font-size:.78rem;">SHEET_URL</code> ในไฟล์ให้เป็นลิงก์ชีทของคุณ</span>
 </div>
 
 <div class="main">
@@ -210,25 +253,62 @@
 
   <!-- KPI -->
   <div class="kpi-grid" id="kpi-grid">
-    <div class="kpi-card navy"><div class="kpi-label">เซลทั้งหมด</div><div class="kpi-value navy" id="k-sellers">34</div><div class="kpi-unit">คน</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">จำนวนลูกค้าที่ดูแลใน ToCRM</div><div class="kpi-value blue" id="k-cust">2,377</div><div class="kpi-unit">ราย</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">จำนวนลูกค้าที่จะตั้งเป้าทั้งหมด</div><div class="kpi-value teal" id="k-target-cust">912</div><div class="kpi-unit">ราย</div></div>
-     <div class="kpi-card purple"><div class="kpi-label">รวมเป้าที่ตั้ง (ยอดขายสูงสุด)</div><div class="kpi-value purple" id="k-target-max">76.2M</div><div class="kpi-unit">บาท</div></div>
-    <div class="kpi-card purple"><div class="kpi-label">รวมค่าคอมที่จะจ่าย (ยอดขายสูงสุด)</div><div class="kpi-value green" id="k-com-max">75,800</div><div class="kpi-unit">บาท</div></div>
-    <div class="kpi-card amber"><div class="kpi-label">รวมเป้าที่ตั้ง (ยอดขายขั้นต่ำ)</div><div class="kpi-value purple" id="k-target-min">19.6</div><div class="kpi-unit">บาท</div></div>
-    <div class="kpi-card amber"><div class="kpi-label">รวมค่าคอม(ยอดขายขั้นต่ำ)</div><div class="kpi-value amber" id="k-com-min">15,700</div><div class="kpi-unit">บาท</div></div>
-    <div class="kpi-card Teal"><div class="kpi-label">รวมเป้าที่ตั้ง (ลูกค้ารายเล็ก)</div><div class="kpi-value purple" id="k-target-small">33.3M</div><div class="kpi-unit">บาท</div></div>
-    <div class="kpi-card Teal"><div class="kpi-label">รวมค่าคอมที่จะจ่าย (ลูกค้ารายเล็ก)</div><div class="kpi-value green" id="k-com-small">25,250</div><div class="kpi-unit">บาท</div></div>
-</div>
+    <div class="kpi-card navy">
+      <div class="kpi-label">เซลทั้งหมด</div>
+      <div class="kpi-value navy" id="k-sellers">34</div>
+      <div class="kpi-unit">คน</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">จำนวนลูกค้าที่ดูแลใน ToCRM</div>
+      <div class="kpi-value purple" id="k-cust">2,377</div>
+      <div class="kpi-unit">ราย</div>
+    </div>
+    <div class="kpi-card" style="border-color:#B91C1C;">
+      <div class="kpi-label">จำนวนลูกค้าที่จะตั้งเป้าทั้งหมด</div>
+      <div class="kpi-value" style="color:#B91C1C;" id="k-target-cust">913</div>
+      <div class="kpi-unit" id="k-target-cust-sub">407 ราย ≥100K | 505 ราย 50K–100K</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">รวมเป้าที่ตั้ง (ยอดขายสูงสุด)</div>
+      <div class="kpi-value blue" id="k-target-max">76,260,000</div>
+      <div class="kpi-unit">บาท</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">รวมค่าคอมที่จะจ่าย (ยอดขายสูงสุด)</div>
+      <div class="kpi-value blue" id="k-com-max">75,800</div>
+      <div class="kpi-unit" id="k-com-max-pct">= 0.0994% ของเป้า</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">รวมเป้าที่ตั้ง (ยอดขายขั้นต่ำ)</div>
+      <div class="kpi-value blue" id="k-target-min">19,670,000</div>
+      <div class="kpi-unit">บาท</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">รวมค่าคอม (ยอดขายขั้นต่ำ)</div>
+      <div class="kpi-value blue" id="k-com-min">15,700</div>
+      <div class="kpi-unit" id="k-com-min-pct">= 0.0798% ของเป้า</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">รวมเป้าที่ตั้ง (ลูกค้ารายเล็ก)</div>
+      <div class="kpi-value teal" id="k-target-small">33,370,000</div>
+      <div class="kpi-unit">บาท</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">รวมค่าคอมที่จะจ่าย (ลูกค้ารายเล็ก)</div>
+      <div class="kpi-value teal" id="k-com-small">25,250</div>
+      <div class="kpi-unit" id="k-com-small-pct">= 0.0757% ของเป้า</div>
+    </div>
+  </div>
+
   <!-- Row 1: Donut + Bar + Top Sellers -->
   <div class="chart-grid">
     <div class="card">
-      <div class="card-title"><span>🏢</span> สัดส่วนลูกค้าตามสาขา</div>
+      <div class="card-title"><span>🏢</span> สัดส่วนลูกค้าที่ตั้งเป้า</div>
       <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
       <div class="donut-legend" id="donut-legend"></div>
     </div>
     <div class="card">
-      <div class="card-title"><span>💰</span> ค่าคอมรวมรายสาขา (มากสุด vs น้อยสุด)</div>
+      <div class="card-title"><span>💰</span> ค่าคอมรวมรายสาขา (ยอดขายสูงสุด vs ยอดขายขั้นต่ำ vs ลูกค้ารายเล็ก)</div>
       <div class="chart-wrap tall"><canvas id="branchComChart"></canvas></div>
     </div>
     <div class="card">
@@ -237,24 +317,21 @@
     </div>
   </div>
 
-  <!-- Row 2: Stacked Bar + Table -->
+  <!-- Row 2: Table -->
   <div class="chart-grid-2">
-    <div class="card">
-      <div class="card-title"><span>📈</span> เป้าขายรายเซล — มากสุด vs น้อยสุด (บาท)</div>
-      <div class="chart-wrap tall"><canvas id="sellerTargetChart"></canvas></div>
-    </div>
     <div class="card">
       <div class="card-title"><span>🎯</span> สรุปรายสาขา</div>
       <div class="table-wrap">
         <table id="branch-table">
           <thead>
-            <tr>
+            <tr id="branch-thead-row">
               <th>สาขา</th>
               <th>เซล</th>
               <th>ลูกค้า</th>
               <th>เป้า (คน)</th>
               <th>คอมมากสุด</th>
               <th>คอมน้อยสุด</th>
+              <th>คอมลูกค้ารายย่อย</th>
             </tr>
           </thead>
           <tbody id="branch-tbody"></tbody>
@@ -267,45 +344,65 @@
 </div>
 
 <script>
+// ⚙️ แก้ SHEET_URL ตรงนี้จุดเดียว — ใส่ลิงก์ Google Sheets ของคุณ
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1Hd8GeAGDL1w8D7WHJFHx4Y532W_aBRBJSSf35O7maE8/edit?gid=106493598#gid=106493598";
+
+// row = หมายเลขแถวใน Google Sheets (นับจาก 1, แถว 1 = header)
 const RAW = [
-  {b:5,  n:"ขวัญ โต5",    tc:89,  tg:15, lo:3,  lmn:0,       lcn:0,    lmx:400000,  lcx:300,  hi:12, hmx:740000,  hcx:600},
-  {b:5,  n:"จอย โต5",     tc:157, tg:60, lo:29, lmn:1170000, lcn:1000, lmx:4880000, lcx:5050, hi:31, hmx:2140000, hcx:1550},
-  {b:5,  n:"เจน โต5",     tc:158, tg:43, lo:18, lmn:830000,  lcn:600,  lmx:3160000, lcx:2900, hi:25, hmx:1660000, hcx:1350},
-  {b:5,  n:"บี โต5",      tc:64,  tg:21, lo:7,  lmn:380000,  lcn:200,  lmx:1150000, lcx:1100, hi:14, hmx:870000,  hcx:700},
-  {b:5,  n:"มิ้น โต5",    tc:1,   tg:1,  lo:0,  lmn:0,       lcn:0,    lmx:0,       lcx:0,    hi:1,  hmx:0,       hcx:0},
-  {b:9,  n:"นุ่น โต9",    tc:62,  tg:24, lo:8,  lmn:0,       lcn:0,    lmx:1000000, lcx:800,  hi:16, hmx:1200000, hcx:800},
-  {b:9,  n:"บุ๋ม โต9",    tc:56,  tg:30, lo:17, lmn:1770000, lcn:1500, lmx:3950000, lcx:4400, hi:13, hmx:870000,  hcx:650},
-  {b:9,  n:"เพน โต9",     tc:58,  tg:36, lo:22, lmn:520000,  lcn:500,  lmx:3860000, lcx:3500, hi:14, hmx:1000000, hcx:700},
-  {b:9,  n:"ลูกปลา โต9",  tc:108, tg:46, lo:19, lmn:710000,  lcn:600,  lmx:3370000, lcx:3350, hi:27, hmx:1750000, hcx:1350},
-  {b:9,  n:"แหม่ม โต9",    tc:72,  tg:35, lo:15, lmn:1020000, lcn:800,  lmx:3270000, lcx:3150, hi:20, hmx:1290000, hcx:1000},
-  {b:9,  n:"ใหม่ โต9",    tc:26,  tg:14, lo:8,  lmn:320000,  lcn:300,  lmx:1590000, lcx:1600, hi:6,  hmx:390000,  hcx:300},
-  {b:10, n:"ต๊ะ โต10",   tc:94,  tg:29, lo:9,  lmn:580000,  lcn:500,  lmx:1960000, lcx:2150, hi:20, hmx:1350000, hcx:1000},
-  {b:10, n:"นาง โต10",    tc:93,  tg:48, lo:29, lmn:1970000, lcn:1500, lmx:5620000, lcx:6050, hi:19, hmx:1270000, hcx:950},
-  {b:10, n:"เฟิร์น โต10",  tc:85,  tg:50, lo:22, lmn:380000,  lcn:300,  lmx:3410000, lcx:2950, hi:28, hmx:1800000, hcx:1400},
-  {b:10, n:"ส้ม โต10",   tc:48,  tg:17, lo:7,  lmn:250000,  lcn:200,  lmx:1250000, lcx:1200, hi:10, hmx:600000,  hcx:500},
-  {b:10, n:"หนึ่ง โต10",  tc:81,  tg:36, lo:12, lmn:260000,  lcn:200,  lmx:1920000, lcx:1550, hi:24, hmx:1630000, hcx:1200},
-  {b:11, n:"เจน โต11",    tc:57,  tg:27, lo:8,  lmn:0,       lcn:0,    lmx:1080000, lcx:800,  hi:19, hmx:1250000, hcx:950},
-  {b:11, n:"เตย โต11",    tc:69,  tg:27, lo:13, lmn:140000,  lcn:100,  lmx:2000000, lcx:1800, hi:14, hmx:920000,  hcx:700},
-  {b:11, n:"นก โต11",     tc:67,  tg:34, lo:17, lmn:660000,  lcn:500,  lmx:2840000, lcx:2750, hi:17, hmx:1130000, hcx:850},
-  {b:11, n:"เบลล่า โต11", tc:77,  tg:20, lo:7,  lmn:0,       lcn:0,    lmx:1090000, lcx:800,  hi:13, hmx:740000,  hcx:650},
-  {b:11, n:"แป๋ม โต11",   tc:39,  tg:25, lo:15, lmn:2380000, lcn:1900, lmx:4330000, lcx:5400, hi:10, hmx:620000,  hcx:500},
-  {b:12, n:"นุช โต12",    tc:48,  tg:21, lo:5,  lmn:280000,  lcn:200,  lmx:920000,  lcx:850,  hi:16, hmx:1090000, hcx:800},
-  {b:12, n:"เน็ท โต12",   tc:23,  tg:8,  lo:4,  lmn:440000,  lcn:300,  lmx:1110000, lcx:1350, hi:4,  hmx:230000,  hcx:200},
-  {b:12, n:"ปู โต12",     tc:114, tg:58, lo:27, lmn:1730000, lcn:1400, lmx:5050000, lcx:5300, hi:31, hmx:2160000, hcx:1550},
-  {b:12, n:"แป้ง โต12",   tc:144, tg:4,  lo:1,  lmn:150000,  lcn:100,  lmx:270000,  lcx:300,  hi:3,  hmx:170000,  hcx:150},
-  {b:12, n:"ผึ้ง โต12",   tc:37,  tg:13, lo:4,  lmn:0,       lcn:0,    lmx:560000,  lcx:400,  hi:9,  hmx:600000,  hcx:450},
-  {b:12, n:"ไอซ์ โต12",   tc:147, tg:72, lo:36, lmn:850000,  lcn:600,  lmx:6310000, lcx:5700, hi:36, hmx:2320000, hcx:1800},
-  {b:13, n:"มิ้ว โต13",    tc:31,  tg:17, lo:7,  lmn:170000,  lcn:100,  lmx:1110000, lcx:900,  hi:10, hmx:630000,  hcx:500},
-  {b:13, n:"แสง โต13",    tc:64,  tg:26, lo:11, lmn:850000,  lcn:700,  lmx:2700000, lcx:2950, hi:15, hmx:1020000, hcx:750},
-  {b:13, n:"อ้อน โต13",   tc:23,  tg:7,  lo:3,  lmn:0,       lcn:0,    lmx:460000,  lcx:300,  hi:4,  hmx:240000,  hcx:200},
-  {b:13, n:"อ้อย โต13",   tc:63,  tg:12, lo:5,  lmn:0,       lcn:0,    lmx:550000,  lcx:500,  hi:7,  hmx:490000,  hcx:350},
-  {b:13, n:"อีฟ โต13",    tc:31,  tg:20, lo:9,  lmn:1350000, lcn:1200, lmx:2740000, lcx:3450, hi:11, hmx:690000,  hcx:550},
-  {b:21, n:"บิ๊ก โต21",    tc:14,  tg:6,  lo:5,  lmn:160000,  lcn:100,  lmx:950000,  lcx:800,  hi:1,  hmx:80000,   hcx:50},
-  {b:21, n:"อิ๊งค์ โต21",     tc:77,  tg:11, lo:5,  lmn:350000,  lcn:300,  lmx:1400000, lcx:1400, hi:6,  hmx:430000,  hcx:300},
+  {b:5,  n:"ขวัญ โต5",    row:2,  tc:89,  tg:15, lo:3,  lmn:0,       lcn:0,    lmx:400000,  lcx:300,  hi:12, hmx:740000,  hcx:600},
+  {b:5,  n:"จอย โต5",     row:3,  tc:157, tg:60, lo:29, lmn:1170000, lcn:1000, lmx:4880000, lcx:5050, hi:31, hmx:2140000, hcx:1550},
+  {b:5,  n:"เจน โต5",     row:4,  tc:158, tg:43, lo:18, lmn:830000,  lcn:600,  lmx:3160000, lcx:2900, hi:25, hmx:1660000, hcx:1250},
+  {b:5,  n:"บี โต5",      row:5,  tc:64,  tg:21, lo:7,  lmn:380000,  lcn:200,  lmx:1150000, lcx:1100, hi:14, hmx:870000,  hcx:700},
+  {b:5,  n:"มิ้น โต5",    row:6,  tc:1,   tg:1,  lo:0,  lmn:0,       lcn:0,    lmx:0,       lcx:0,    hi:0,  hmx:0,       hcx:0},
+  {b:9,  n:"นุ่น โต9",    row:7,  tc:62,  tg:24, lo:8,  lmn:0,       lcn:0,    lmx:1000000, lcx:800,  hi:16, hmx:1200000, hcx:800},
+  {b:9,  n:"บุ๋ม โต9",    row:8,  tc:56,  tg:30, lo:17, lmn:1770000, lcn:1500, lmx:3950000, lcx:4400, hi:13, hmx:870000,  hcx:650},
+  {b:9,  n:"เพน โต9",     row:9,  tc:58,  tg:36, lo:22, lmn:520000,  lcn:500,  lmx:3860000, lcx:3500, hi:14, hmx:1000000, hcx:700},
+  {b:9,  n:"ลูกปลา โต9",  row:10, tc:108, tg:46, lo:19, lmn:710000,  lcn:600,  lmx:3370000, lcx:3350, hi:27, hmx:1750000, hcx:1350},
+  {b:9,  n:"แหม่ม โต9",   row:11, tc:72,  tg:35, lo:15, lmn:1020000, lcn:800,  lmx:3270000, lcx:3150, hi:20, hmx:1290000, hcx:1000},
+  {b:9,  n:"ใหม่ โต9",    row:12, tc:26,  tg:14, lo:8,  lmn:320000,  lcn:300,  lmx:1590000, lcx:1600, hi:6,  hmx:390000,  hcx:300},
+  {b:10, n:"ต๊ะ โต10",    row:13, tc:94,  tg:29, lo:9,  lmn:580000,  lcn:500,  lmx:1960000, lcx:2150, hi:20, hmx:1350000, hcx:1000},
+  {b:10, n:"นาง โต10",    row:14, tc:93,  tg:48, lo:29, lmn:1970000, lcn:1500, lmx:5620000, lcx:6050, hi:19, hmx:1270000, hcx:950},
+  {b:10, n:"เฟิร์น โต10", row:15, tc:85,  tg:50, lo:22, lmn:380000,  lcn:300,  lmx:3410000, lcx:2950, hi:28, hmx:1800000, hcx:1400},
+  {b:10, n:"ส้ม โต10",    row:16, tc:48,  tg:17, lo:7,  lmn:250000,  lcn:200,  lmx:1250000, lcx:1200, hi:10, hmx:600000,  hcx:500},
+  {b:10, n:"หนึ่ง โต10",  row:17, tc:81,  tg:36, lo:12, lmn:260000,  lcn:200,  lmx:1920000, lcx:1550, hi:24, hmx:1630000, hcx:1200},
+  {b:11, n:"เจน โต11",    row:18, tc:57,  tg:27, lo:8,  lmn:0,       lcn:0,    lmx:1080000, lcx:800,  hi:19, hmx:1250000, hcx:950},
+  {b:11, n:"เตย โต11",    row:19, tc:69,  tg:27, lo:13, lmn:140000,  lcn:100,  lmx:2000000, lcx:1800, hi:14, hmx:920000,  hcx:700},
+  {b:11, n:"นก โต11",     row:20, tc:67,  tg:34, lo:17, lmn:660000,  lcn:500,  lmx:2840000, lcx:2750, hi:17, hmx:1130000, hcx:850},
+  {b:11, n:"เบลล่า โต11", row:21, tc:77,  tg:20, lo:7,  lmn:0,       lcn:0,    lmx:1090000, lcx:800,  hi:13, hmx:740000,  hcx:650},
+  {b:11, n:"แป๋ม โต11",   row:22, tc:39,  tg:25, lo:15, lmn:2380000, lcn:1900, lmx:4330000, lcx:5400, hi:10, hmx:620000,  hcx:500},
+  {b:12, n:"นุช โต12",    row:23, tc:48,  tg:21, lo:5,  lmn:280000,  lcn:200,  lmx:920000,  lcx:850,  hi:16, hmx:1090000, hcx:800},
+  {b:12, n:"เน็ท โต12",   row:24, tc:23,  tg:8,  lo:4,  lmn:440000,  lcn:300,  lmx:1110000, lcx:1350, hi:4,  hmx:230000,  hcx:200},
+  {b:12, n:"ปู โต12",     row:25, tc:114, tg:58, lo:27, lmn:1730000, lcn:1400, lmx:5050000, lcx:5300, hi:31, hmx:2160000, hcx:1550},
+  {b:12, n:"แป้ง โต12",   row:26, tc:144, tg:4,  lo:1,  lmn:150000,  lcn:100,  lmx:270000,  lcx:300,  hi:3,  hmx:170000,  hcx:150},
+  {b:12, n:"ผึ้ง โต12",   row:27, tc:37,  tg:13, lo:4,  lmn:0,       lcn:0,    lmx:560000,  lcx:400,  hi:9,  hmx:600000,  hcx:450},
+  {b:12, n:"ไอซ์ โต12",   row:28, tc:147, tg:72, lo:36, lmn:850000,  lcn:600,  lmx:6310000, lcx:5700, hi:36, hmx:2320000, hcx:1800},
+  {b:13, n:"มิ้ว โต13",   row:29, tc:31,  tg:17, lo:7,  lmn:170000,  lcn:100,  lmx:1110000, lcx:900,  hi:10, hmx:630000,  hcx:500},
+  {b:13, n:"แสง โต13",    row:30, tc:64,  tg:26, lo:11, lmn:850000,  lcn:700,  lmx:2700000, lcx:2950, hi:15, hmx:1020000, hcx:750},
+  {b:13, n:"อ้อน โต13",   row:31, tc:23,  tg:7,  lo:3,  lmn:0,       lcn:0,    lmx:460000,  lcx:300,  hi:4,  hmx:240000,  hcx:200},
+  {b:13, n:"อ้อย โต13",   row:32, tc:63,  tg:12, lo:5,  lmn:0,       lcn:0,    lmx:550000,  lcx:500,  hi:7,  hmx:490000,  hcx:350},
+  {b:13, n:"อีฟ โต13",    row:33, tc:31,  tg:20, lo:9,  lmn:1350000, lcn:1200, lmx:2740000, lcx:3450, hi:11, hmx:690000,  hcx:550},
+  {b:21, n:"บิ๊ก โต21",   row:34, tc:14,  tg:6,  lo:5,  lmn:160000,  lcn:100,  lmx:950000,  lcx:800,  hi:1,  hmx:80000,   hcx:50},
+  {b:21, n:"อิ๊งค์ โต21", row:35, tc:77,  tg:11, lo:5,  lmn:350000,  lcn:300,  lmx:1400000, lcx:1400, hi:6,  hmx:430000,  hcx:300},
 ];
 
 const BRANCH_COLORS = {5:"#1D4ED8",9:"#0F766E",10:"#15803D",11:"#6D28D9",12:"#B45309",13:"#B91C1C",21:"#0F1E3C"};
 const BRANCH_LIGHT  = {5:"#DBEAFE",9:"#CCFBF1",10:"#DCFCE7",11:"#EDE9FE",12:"#FEF3C7",13:"#FEE2E2",21:"#CBD5E1"};
+
+function sheetUrl(row) {
+  if (SHEET_URL.includes("YOUR_SHEET_ID")) return null;
+  return `${SHEET_URL}&range=A${row}`;
+}
+function sellerLink(r) {
+  const url = sheetUrl(r.row);
+  if (!url) return `<span style="font-weight:700;color:var(--navy)" title="ยังไม่ได้ตั้งค่า SHEET_URL">${r.n}</span>`;
+  return `<a href="${url}" target="_blank" rel="noopener"
+    style="font-weight:700;color:var(--navy);text-decoration:none;
+           border-bottom:1.5px dashed #CBD5E1;padding-bottom:1px;
+           transition:color .15s,border-color .15s;"
+    onmouseover="this.style.color='#1D4ED8';this.style.borderColor='#1D4ED8'"
+    onmouseout="this.style.color='var(--navy)';this.style.borderColor='#CBD5E1'"
+    title="ดูข้อมูลใน Google Sheets ↗">${r.n} <span style="font-size:.65rem;opacity:.6">↗</span></a>`;
+}
 
 let currentBranch = 'all';
 let charts = {};
@@ -325,85 +422,115 @@ function filterBranch(b, el) {
 }
 
 function updateKPI(data) {
-  const branches = [...new Set(data.map(r => r.b))];
+  const isAll = currentBranch === 'all';
 
   document.getElementById('k-sellers').textContent = data.length;
+  document.getElementById('k-cust').textContent = fmtFull(data.reduce((s,r)=>s+r.tc,0));
 
-  document.getElementById('k-cust').textContent =
-    fmtFull(data.reduce((s,r)=>s+r.tc,0));
+  // จำนวนลูกค้าที่ตั้งเป้า — lo = ≥100K, hi = 50K–100K
+  const totalLo = data.reduce((s,r)=>s+r.lo,0);
+  const totalHi = data.reduce((s,r)=>s+r.hi,0);
+  document.getElementById('k-target-cust').textContent = fmtFull(totalLo + totalHi);
+  document.getElementById('k-target-cust-sub').textContent =
+    `${fmtFull(totalLo)} ราย ≥100K | ${fmtFull(totalHi)} ราย 50K–100K`;
 
-  document.getElementById('k-target-cust').textContent =
-    fmtFull(data.reduce((s,r)=>s+r.tg,0));
+  // เป้าขายสูงสุด = lmx เท่านั้น (ไม่รวม hmx)
+  const tmax  = data.reduce((s,r)=>s+r.lmx,0);
+  const comMax = data.reduce((s,r)=>s+r.lcx,0);
+  document.getElementById('k-target-max').textContent = fmtFull(tmax);
+  document.getElementById('k-com-max').textContent = fmtFull(comMax);
+  document.getElementById('k-com-max-pct').textContent =
+    tmax > 0 ? `= ${(comMax/tmax*100).toFixed(4)}% ของเป้า` : '';
 
-  const tmax =
-    data.reduce((s,r)=>s+r.lmx+r.hmx,0);
+  // เป้าขายขั้นต่ำ = lmn
+  const tmin  = data.reduce((s,r)=>s+r.lmn,0);
+  const comMin = data.reduce((s,r)=>s+r.lcn,0);
+  document.getElementById('k-target-min').textContent = fmtFull(tmin);
+  document.getElementById('k-com-min').textContent = fmtFull(comMin);
+  document.getElementById('k-com-min-pct').textContent =
+    tmin > 0 ? `= ${(comMin/tmin*100).toFixed(4)}% ของเป้า` : '';
 
-  const tmin =
-    data.reduce((s,r)=>s+r.lmn+(r.hmn||0),0);
-
-  const tsmall =
-    data.reduce((s,r)=>s+r.hmx,0);
-
-  document.getElementById('k-target-max').textContent = fmt(tmax);
-
-  document.getElementById('k-target-min').textContent = fmt(tmin);
-
-  document.getElementById('k-target-small').textContent = fmt(tsmall);
-
-  document.getElementById('k-com-max').textContent =
-    fmtFull(data.reduce((s,r)=>s+r.lcx+r.hcx,0));
-
-  document.getElementById('k-com-min').textContent =
-    fmtFull(data.reduce((s,r)=>s+r.lcn+(r.hcn||0),0));
+  // ลูกค้ารายเล็ก = hmx
+  const tsmall  = data.reduce((s,r)=>s+r.hmx,0);
+  const comSmall = data.reduce((s,r)=>s+r.hcx,0);
+  document.getElementById('k-target-small').textContent = fmtFull(tsmall);
+  document.getElementById('k-com-small').textContent = fmtFull(comSmall);
+  document.getElementById('k-com-small-pct').textContent =
+    tsmall > 0 ? `= ${(comSmall/tsmall*100).toFixed(4)}% ของเป้า` : '';
 }
 
 function getBranchSummary(data) {
   const bmap = {};
   data.forEach(r => {
-    if (!bmap[r.b]) bmap[r.b] = {sellers:0,tc:0,tg:0,comMax:0,comMin:0};
+    if (!bmap[r.b]) bmap[r.b] = {sellers:0,tc:0,tg:0,comMax:0,comLcx:0,comMin:0,comSmall:0};
     bmap[r.b].sellers++;
     bmap[r.b].tc += r.tc;
     bmap[r.b].tg += r.tg;
-    bmap[r.b].comMax += r.lcx + r.hcx;
-    bmap[r.b].comMin += r.lcn + (r.hcn||0);
+    bmap[r.b].comMax   += r.lcx + r.hcx;
+    bmap[r.b].comLcx   += r.lcx;
+    bmap[r.b].comMin   += r.lcn + (r.hcn||0);
+    bmap[r.b].comSmall += r.hcx;
   });
   return bmap;
 }
 
 function updateDonut(data) {
-  const bmap = getBranchSummary(data);
-  const labels = Object.keys(bmap).map(b => `สาขา ${b}`);
-  const vals = Object.keys(bmap).map(b => bmap[b].tc);
-  const colors = Object.keys(bmap).map(b => BRANCH_COLORS[b]);
-  const total = vals.reduce((a,b)=>a+b,0);
+  const labels = [
+    'ตั้งเป้าเกิน 1 แสน เป็น ยอดขายขั้นต่ำ และ ยอดขายสูงสุด',
+    'ตั้งเป้า 5 หมื่น - 1 แสน เป็น ลูกค้ารายเล็ก'
+  ];
+  const vals = [407, 505];
+  const colors = ['#1D4ED8', '#0F766E'];
+  const total = 913;
 
   if (charts.donut) charts.donut.destroy();
   charts.donut = new Chart(document.getElementById('donutChart'), {
     type: 'doughnut',
-    data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
     options: {
-      cutout: '62%', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: { label: ctx => ` ${ctx.label}: ${fmtFull(ctx.raw)} ราย (${(ctx.raw/total*100).toFixed(1)}%)` }
-      }}
+      cutout: '62%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${fmtFull(ctx.raw)} ราย (${(ctx.raw/total*100).toFixed(1)}%)`
+          }
+        }
+      }
     }
   });
 
-  const leg = document.getElementById('donut-legend');
-  leg.innerHTML = Object.keys(bmap).map(b => `
+  document.getElementById('donut-legend').innerHTML = `
     <div class="legend-item">
-      <div class="legend-dot" style="background:${BRANCH_COLORS[b]}"></div>
-      <div class="legend-label">สาขา ${b}</div>
-      <div class="legend-val">${fmtFull(bmap[b].tc)}</div>
-    </div>`).join('');
+      <div class="legend-dot" style="background:#1D4ED8"></div>
+      <div class="legend-label">ตั้งเป้าเกิน 1 แสน</div>
+      <div class="legend-val">407 ราย</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#0F766E"></div>
+      <div class="legend-label">ตั้งเป้า 5 หมื่น - 1 แสน</div>
+      <div class="legend-val">505 ราย</div>
+    </div>
+  `;
 }
 
 function updateBranchCom(data) {
   const bmap = getBranchSummary(data);
-  const labels = Object.keys(bmap).map(b => `สาขา ${b}`);
-  const maxVals = Object.keys(bmap).map(b => bmap[b].comMax);
-  const minVals = Object.keys(bmap).map(b => bmap[b].comMin);
-  const colors = Object.keys(bmap).map(b => BRANCH_COLORS[b]);
+  const labels    = Object.keys(bmap).map(b => `สาขา ${b}`);
+  const maxVals   = Object.keys(bmap).map(b => bmap[b].comLcx);
+  const minVals   = Object.keys(bmap).map(b => bmap[b].comMin);
+  const smallVals = Object.keys(bmap).map(b => bmap[b].comSmall);
+  const colors    = Object.keys(bmap).map(b => BRANCH_COLORS[b]);
 
   if (charts.branchCom) charts.branchCom.destroy();
   charts.branchCom = new Chart(document.getElementById('branchComChart'), {
@@ -411,18 +538,27 @@ function updateBranchCom(data) {
     data: {
       labels,
       datasets: [
-        { label: 'ค่าคอม (มากสุด)', data: maxVals, backgroundColor: colors, borderRadius: 5 },
-        { label: 'ค่าคอม (น้อยสุด)', data: minVals, backgroundColor: colors.map(c => c+'55'), borderRadius: 5 },
+        { label: 'ยอดขายสูงสุด',   data: maxVals,   backgroundColor: colors,                  borderRadius: 6 },
+        { label: 'ยอดขายขั้นต่ำ',   data: minVals,   backgroundColor: colors.map(c => c+'55'), borderRadius: 6 },
+        { label: 'ลูกค้ารายเล็ก',   data: smallVals, backgroundColor: colors.map(c => c+'99'), borderRadius: 6 },
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 }, boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw)} บาท` } }
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${fmtFull(ctx.raw)} บาท`
+          }
+        }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { family: 'Sarabun', size: 11 } } },
-        y: { grid: { color: '#F1F5F9' }, ticks: { font: { family: 'IBM Plex Mono', size: 10 }, callback: v => fmt(v) } }
+        y: {
+          beginAtZero: true,
+          ticks: { callback: v => fmt(v) }
+        }
       }
     }
   });
@@ -439,10 +575,15 @@ function updateTopSellers(data) {
     const rankClass = i < 3 ? ['gold','silver','bronze'][i] : '';
     return `<div class="seller-row">
       <div class="seller-rank ${rankClass}">${i < 3 ? medals[i] : i+1}</div>
-      <div class="seller-name" title="${r.n}">${r.n}</div>
+      <div class="seller-name" title="${r.n}">${
+        (() => {
+          const url = sheetUrl(r.row);
+          if (!url) return r.n;
+          return `<a href="${url}" target="_blank" rel="noopener" style="color:var(--navy);text-decoration:none;border-bottom:1px dashed #CBD5E1;" title="ดูใน Sheets ↗">${r.n}</a>`;
+        })()
+      }</div>
       <div class="seller-bar-wrap">
-        <div class="seller-bar" style="width:${pct}%;background:${BRANCH_COLORS[r.b]}">
-        </div>
+        <div class="seller-bar" style="width:${pct}%;background:${BRANCH_COLORS[r.b]}"></div>
       </div>
       <div class="seller-val">${fmtFull(com)}</div>
     </div>`;
@@ -468,7 +609,8 @@ function updateSellerChart(data) {
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 }, boxWidth: 12 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 }, boxWidth: 12 } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw)} บาท` } }
       },
       scales: {
@@ -480,30 +622,77 @@ function updateSellerChart(data) {
 }
 
 function updateBranchTable(data) {
-  const bmap = getBranchSummary(data);
-  const tbody = document.getElementById('branch-tbody');
-  tbody.innerHTML = Object.keys(bmap).map(b => `
-    <tr>
-      <td><span class="branch-pill" style="background:${BRANCH_LIGHT[b]};color:${BRANCH_COLORS[b]}">สาขา ${b}</span></td>
-      <td>${bmap[b].sellers}</td>
-      <td>${fmtFull(bmap[b].tc)}</td>
-      <td>${fmtFull(bmap[b].tg)}</td>
-      <td style="color:var(--green);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(bmap[b].comMax)}</td>
-      <td style="color:var(--amber);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(bmap[b].comMin)}</td>
-    </tr>`).join('');
+  const isBranch = currentBranch !== 'all';
 
-  const tfoot = document.getElementById('branch-tfoot');
-  const totalTc = data.reduce((s,r)=>s+r.tc,0);
-  const totalTg = data.reduce((s,r)=>s+r.tg,0);
-  const totalCMax = data.reduce((s,r)=>s+r.lcx+r.hcx,0);
-  const totalCMin = data.reduce((s,r)=>s+r.lcn+(r.hcn||0),0);
-  tfoot.innerHTML = `
-    <td>รวมทั้งหมด</td>
-    <td>${data.length}</td>
-    <td>${fmtFull(totalTc)}</td>
-    <td>${fmtFull(totalTg)}</td>
-    <td>${fmtFull(totalCMax)}</td>
-    <td>${fmtFull(totalCMin)}</td>`;
+  // อัปเดต header
+  document.getElementById('branch-thead-row').innerHTML = isBranch
+    ? `<th>เซล</th>
+       <th>ลูกค้า ToCRM</th>
+       <th>≥100K (คน)</th>
+       <th>50K–100K (คน)</th>
+       <th>คอมสูงสุด</th>
+       <th>คอมขั้นต่ำ</th>
+       <th>คอมรายย่อย</th>`
+    : `<th>สาขา</th>
+       <th>เซล</th>
+       <th>ลูกค้า</th>
+       <th>เป้า (คน)</th>
+       <th>คอมมากสุด</th>
+       <th>คอมน้อยสุด</th>
+       <th>คอมลูกค้ารายย่อย</th>`;
+
+  if (isBranch) {
+    // แสดงรายเซล
+    const sorted = [...data].sort((a,b) => (b.lcx+b.hcx) - (a.lcx+a.hcx));
+    document.getElementById('branch-tbody').innerHTML = sorted.map(r => `
+      <tr>
+        <td>${sellerLink(r)}</td>
+        <td>${fmtFull(r.tc)}</td>
+        <td>${fmtFull(r.lo)}</td>
+        <td>${fmtFull(r.hi)}</td>
+        <td style="color:var(--green);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(r.lcx)}</td>
+        <td style="color:var(--amber);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(r.lcn)}</td>
+        <td style="color:var(--teal);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(r.hcx)}</td>
+      </tr>`).join('');
+  } else {
+    // แสดงรายสาขา
+    const bmap = getBranchSummary(data);
+    document.getElementById('branch-tbody').innerHTML = Object.keys(bmap).map(b => `
+      <tr>
+        <td><span class="branch-pill" style="background:${BRANCH_LIGHT[b]};color:${BRANCH_COLORS[b]}">สาขา ${b}</span></td>
+        <td>${bmap[b].sellers}</td>
+        <td>${fmtFull(bmap[b].tc)}</td>
+        <td>${fmtFull(bmap[b].tg)}</td>
+        <td style="color:var(--green);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(bmap[b].comMax)}</td>
+        <td style="color:var(--amber);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(bmap[b].comMin)}</td>
+        <td style="color:var(--teal);font-weight:600;font-family:'IBM Plex Mono',monospace">${fmtFull(bmap[b].comSmall)}</td>
+      </tr>`).join('');
+  }
+
+  // tfoot รวม
+  const totalTc    = data.reduce((s,r)=>s+r.tc,0);
+  const totalLo    = data.reduce((s,r)=>s+r.lo,0);
+  const totalHi    = data.reduce((s,r)=>s+r.hi,0);
+  const totalTg    = data.reduce((s,r)=>s+r.tg,0);
+  const totalCMax  = data.reduce((s,r)=>s+r.lcx,0);
+  const totalCMin  = data.reduce((s,r)=>s+r.lcn,0);
+  const totalCSmall = data.reduce((s,r)=>s+r.hcx,0);
+
+  document.getElementById('branch-tfoot').innerHTML = isBranch
+    ? `<td>รวม</td>
+       <td>${fmtFull(totalTc)}</td>
+       <td>${fmtFull(totalLo)}</td>
+       <td>${fmtFull(totalHi)}</td>
+       <td>${fmtFull(totalCMax)}</td>
+       <td>${fmtFull(totalCMin)}</td>
+       <td>${fmtFull(totalCSmall)}</td>`
+    : `<td>รวมทั้งหมด</td>
+       <td>${data.length}</td>
+       <td>${fmtFull(totalTc)}</td>
+       <td>${fmtFull(totalTg)}</td>
+       <td>${fmtFull(totalCMax)}</td>
+       <td>${fmtFull(totalCMin)}</td>
+       <td>${fmtFull(totalCSmall)}</td>`;
 }
 
 function updateAll() {
@@ -512,11 +701,19 @@ function updateAll() {
   updateDonut(data);
   updateBranchCom(data);
   updateTopSellers(data);
-  updateSellerChart(data);
   updateBranchTable(data);
 }
 
 updateAll();
+
+// แสดง notice ถ้ายังไม่ตั้งค่า SHEET_URL
+if (SHEET_URL.includes("YOUR_SHEET_ID")) {
+  const n = document.getElementById('sheet-notice');
+  if (n) n.style.display = 'flex';
+} else {
+  const btn = document.getElementById('raw-data-btn');
+  if (btn) btn.href = SHEET_URL;
+}
 </script>
 </body>
 </html>
